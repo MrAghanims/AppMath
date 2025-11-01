@@ -2,13 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI; // for feedback UI
 
 public class PlayerAttack : MonoBehaviour
 {
     public float attackRange = 2f;
     public LayerMask enemyLayer;
     public TextMeshProUGUI feedbackText;
+
+    private Coroutine feedbackCoroutine;
 
     void Update()
     {
@@ -22,55 +23,69 @@ public class PlayerAttack : MonoBehaviour
     {
         Collider[] hitEnemies = Physics.OverlapSphere(transform.position, attackRange, enemyLayer);
 
+        bool hitSomething = false;
+
         foreach (Collider enemy in hitEnemies)
         {
+            hitSomething = true;
+
             Vector3 enemyForward = enemy.transform.forward;
             Vector3 directionToPlayer = (transform.position - enemy.transform.position).normalized;
 
-            // Dot product: > 0 = in front, < 0 = behind
             float dot = Vector3.Dot(enemyForward, directionToPlayer);
 
-            if (dot < 0) // player is behind enemy
+            if (dot < 0) // Player is behind enemy
             {
-                feedbackText.text = "Backstab Successful!";
+                ShowFeedback("Backstab Successful!", Color.green);
                 Debug.Log("Backstab Successful");
-                // You can destroy enemy or play animation
                 Destroy(enemy.gameObject);
-
             }
             else
             {
-                feedbackText.text = "Attack Failed!";
+                ShowFeedback("Attack Failed!", Color.red);
                 Debug.Log("Attack Failed");
             }
+        }
 
-            Invoke(nameof(ClearFeedback), 1f);
+        if (!hitSomething)
+        {
+            ShowFeedback("No Target", Color.yellow);
         }
     }
 
-    void ClearFeedback()
+    void ShowFeedback(string message, Color color)
     {
-        StartCoroutine(ShowFeedback(""));
+        // If a feedback coroutine is running, stop it first
+        if (feedbackCoroutine != null)
+        {
+            StopCoroutine(feedbackCoroutine);
+        }
+
+        feedbackCoroutine = StartCoroutine(FeedbackRoutine(message, color));
+    }
+
+    IEnumerator FeedbackRoutine(string message, Color color)
+    {
+        feedbackText.text = message;
+        feedbackText.color = color;
+        feedbackText.alpha = 1f;
+
+        yield return new WaitForSeconds(1.5f); // show message for 1.5 seconds
+
+        // Fade out smoothly
+        for (float t = 1f; t >= 0; t -= Time.deltaTime)
+        {
+            feedbackText.alpha = t;
+            yield return null;
+        }
+
+        feedbackText.text = "";
+        feedbackCoroutine = null;
     }
 
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, attackRange);
-    }
-    IEnumerator ShowFeedback(string message)
-    {
-        feedbackText.text = message;
-        feedbackText.alpha = 1;
-
-        yield return new WaitForSeconds(1f);
-
-        // Fade out
-        for (float t = 1f; t >= 0; t -= Time.deltaTime)
-        {
-            feedbackText.alpha = t;
-            yield return null;
-        }
-        feedbackText.text = "";
     }
 }

@@ -11,6 +11,9 @@ public class PlayerMovement : MonoBehaviour
     public Transform cam;
     public float mouseSensitivity = 2f;
     public GameObject levelCompletePanel;
+    public float jumpHeight = 2f;
+    private bool isGrounded;
+
 
     private float xRotation = 0f;
     private Vector3 velocity;
@@ -22,7 +25,8 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        
+        isGrounded = controller.isGrounded;
+
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
 
@@ -39,6 +43,13 @@ public class PlayerMovement : MonoBehaviour
         controller.Move(move * speed * Time.deltaTime);
 
         
+        velocity.y += gravity * Time.deltaTime;
+        controller.Move(velocity * Time.deltaTime);
+
+        if (Input.GetButtonDown("Jump") && isGrounded)
+        {
+            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+        }
         velocity.y += gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
     }
