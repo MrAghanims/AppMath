@@ -1,47 +1,35 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.AI;
 
-public class EnemyPatrol : MonoBehaviour
+public class EnemyMovement : MonoBehaviour
 {
     public Transform[] waypoints;
-    private int currentWaypoint = 0;
     public float speed = 2f;
-    public float chaseRange = 5f;
-    public Transform player;
-    private bool isChasing = false;
+    private int currentWaypointIndex = 0;
 
     void Update()
     {
-        float distance = Vector3.Distance(transform.position, player.position);
+        if (waypoints.Length == 0) return;
 
-        if (distance < chaseRange)
-        {
-            isChasing = true;
-            transform.position = Vector3.MoveTowards(transform.position, player.position, speed * Time.deltaTime);
-        }
-        else if (isChasing && distance >= chaseRange + 3)
-        {
-            isChasing = false;
-        }
+        Transform target = waypoints[currentWaypointIndex];
+        Vector3 direction = (target.position - transform.position).normalized;
 
-        if (!isChasing)
+        // Face and move toward the waypoint
+        transform.rotation = Quaternion.LookRotation(direction);
+        transform.position = Vector3.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
+
+        // Go to next waypoint
+        if (Vector3.Distance(transform.position, target.position) < 0.2f)
         {
-            Patrol();
+            currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
         }
     }
 
-    void Patrol()
+    void OnDrawGizmosSelected()
     {
-        if (waypoints.Length == 0) return;
-
-        Transform target = waypoints[currentWaypoint];
-        transform.position = Vector3.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
-
-        if (Vector3.Distance(transform.position, target.position) < 0.3f)
-        {
-            currentWaypoint = (currentWaypoint + 1) % waypoints.Length;
-        }
+        // Shows enemy forward direction
+        Gizmos.color = Color.blue;
+        Gizmos.DrawLine(transform.position, transform.position + transform.forward * 2);
     }
 }
